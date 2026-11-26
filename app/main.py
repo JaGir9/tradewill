@@ -8,6 +8,7 @@ from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 from .core import Engine, Store, ACCOUNTS
+from .demo_auto import DemoAuto
 
 BASE = Path(__file__).resolve().parent
 store = Store()
@@ -152,6 +153,7 @@ from .browser_bridge import Bridge, Heartbeat
 bridge = Bridge()
 from .demo_feed import DemoFeed
 demo_feed = DemoFeed()
+demo_auto = DemoAuto()
 
 @app.get("/api/bridge/pair")
 async def bridge_pair(request: Request):
@@ -169,3 +171,16 @@ async def bridge_heartbeat(body: Heartbeat, request: Request):
 @app.get("/api/bridge/status")
 async def bridge_status():
     return {**bridge.status(), "demo_strategy": demo_feed.status()}
+
+class DemoAutoControl(BaseModel):
+    enabled: bool
+
+@app.post("/api/demo-auto/control")
+async def demo_auto_control(body: DemoAutoControl):
+    demo_auto.enable(body.enabled)
+    return demo_auto.status()
+
+@app.get("/api/demo-auto/status")
+async def demo_auto_status():
+    status = await asyncio.to_thread(demo_auto.evaluate, demo_feed, bridge, store.config("broker_demo"))
+    return {**demo_auto.status(), "evaluation":status}
