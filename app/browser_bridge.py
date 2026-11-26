@@ -13,6 +13,13 @@ class Heartbeat(BaseModel):
     account_marker: bool = False
     domain: str = Field(default='',max_length=100)
 
+    symbol: str = Field(default="",max_length=32)
+    bid: float | None = Field(default=None,gt=0,allow_inf_nan=False)
+    ask: float | None = Field(default=None,gt=0,allow_inf_nan=False)
+    lot_ready: bool = False
+    submit_ready: bool = False
+    close_controls: int = Field(default=0,ge=0)
+
 class Bridge:
     def __init__(self):
         self.key = secrets.token_urlsafe(32)
@@ -32,5 +39,5 @@ class Bridge:
             d = self.data if fresh else {}
             state = ("DISCONNECTED" if not fresh else "LOGIN_REQUIRED_OR_FORM_VISIBLE" if d.get("login_form") else "ACCOUNT_UI_DETECTED" if d.get("account_marker") and d.get("trading_ui") else "TRADING_UI_DETECTED" if d.get("trading_ui") else "TAB_CONNECTED_ACCOUNT_UNKNOWN")
             return {"fresh":fresh,"connection":state,"observation":d,
-                    "authentication":"UNVERIFIED","market_feed":"NOT_IMPLEMENTED",
+                    "authentication":"UNVERIFIED","market_feed":"DOM_QUOTE_OBSERVED_UNVERIFIED" if d.get("symbol") and d.get("bid") and d.get("ask") and d["ask"]>=d["bid"] else "WAITING_FOR_QUOTES",
                     "broker_orders":"DISABLED"}

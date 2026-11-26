@@ -1,0 +1,2 @@
+# V3.3 DOM discovery
+Based on supplied Universal Auto Trader V4.5 selectors. Poll DOM every 100 ms; changed observations sent at most every 250 ms, unchanged every 3 s. GET /api/bridge/status shows observed bid/ask, symbol and availability of lot, submit and close controls. No order clicks, no broker execution, no candle feed. Quotes are unverified DOM observations, not exchange timestamps. Reload extension and TradeWill tab after update. Runtime not tested.
