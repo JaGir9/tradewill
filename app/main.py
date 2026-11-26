@@ -116,3 +116,29 @@ async def websocket(ws: WebSocket):
             await asyncio.sleep(1.0)
     except (WebSocketDisconnect, RuntimeError):
         pass
+
+class ExternalQuote(BaseModel):
+    symbol: str
+    bid: float
+    ask: float
+    timestamp: float
+    bars: list[dict]
+
+class VirtualBalance(BaseModel):
+    amount: float
+
+@app.post("/api/feed")
+async def feed(body: ExternalQuote):
+    try:
+        await asyncio.to_thread(engine.ingest,body.symbol,body.bid,body.ask,body.timestamp,body.bars)
+        return {"accepted":True}
+    except (ValueError,KeyError,TypeError) as exc:
+        raise HTTPException(422,str(exc)) from exc
+
+@app.post("/api/virtual-balance")
+async def virtual_balance(body: VirtualBalance):
+    try:
+        await asyncio.to_thread(engine.set_virtual_balance,body.amount)
+        return await state()
+    except ValueError as exc:
+        raise HTTPException(409,str(exc)) from exc

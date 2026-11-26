@@ -34,10 +34,10 @@ function render(s){
   $('pnl').textContent='$'+s.metrics.realized_net.toFixed(2);
   $('winrate').textContent=s.metrics.win_rate===null?'—':s.metrics.win_rate+'%';
   $('open').textContent=s.positions.length;
-  $('price').textContent=s.price;$('signal').textContent=s.signal.side;$('strategy').textContent=s.signal.strategy;$('score').textContent=s.signal.score+'/100';$('reason').textContent=s.signal.reason;
+  $('price').textContent=s.price??'—';$('feedStatus').textContent=s.market_source+' | feed ready: '+s.feed_ready;$('saveBalance').disabled=s.account!=='simulation'||s.status!=='STOPPED';$('signal').textContent=s.signal.side;$('strategy').textContent=s.signal.strategy;$('score').textContent=s.signal.score+'/100';$('reason').textContent=s.signal.reason;
   $('broker').textContent='TradeWill: NOT CONNECTED (order real disabled)';
   $('switch').disabled=s.status!=='STOPPED';
-  for(const b of document.querySelectorAll('[data-action]')){const a=b.dataset.action;b.disabled=(a==='start'&&(s.status==='RUNNING'||s.account!=='demo'))||(a==='pause'&&s.status!=='RUNNING');}
+  for(const b of document.querySelectorAll('[data-action]')){const a=b.dataset.action;b.disabled=(a==='start'&&(s.status==='RUNNING'||(s.account!=='demo'&&(s.account!=='simulation'||!s.feed_ready))))||(a==='pause'&&s.status!=='RUNNING');}
   if(!accountChoicePending) $('account').value=s.account;
   if(lastAccount!==s.account){lastAccount=s.account;loadConfig(s.config);}
   if(!configIsDirty && s.status==='STOPPED')loadConfig(s.config);
@@ -50,7 +50,7 @@ async function refresh(){try{const r=await fetch('/api/state',{cache:'no-store'}
 $('account').addEventListener('change',()=>{accountChoicePending=true;});
 $('switch').addEventListener('click',async()=>{
   const a=$('account').value;
-  if(a!=='demo'&&!confirm('Akun REAL belum terhubung dan trading akan tetap terkunci. Pilih untuk menyimpan konfigurasi saja?')){accountChoicePending=false;await refresh();return;}
+  if(a!=='demo'&&a!=='simulation'&&!confirm('Akun REAL belum terhubung dan trading akan tetap terkunci. Pilih untuk menyimpan konfigurasi saja?')){accountChoicePending=false;await refresh();return;}
   try{await req('/api/account',{account:a});accountChoicePending=false;lastAccount=null;setMsg('Akun pilihan diperbarui. Bukan pergantian akun di website TradeWill.');await refresh();}catch(e){accountChoicePending=false;setMsg(e.message,true);await refresh();}
 });
 cfgForm.addEventListener('input',()=>{configIsDirty=true;});
@@ -58,7 +58,9 @@ cfgForm.addEventListener('submit',async e=>{e.preventDefault();try{await req('/a
 for(const b of document.querySelectorAll('[data-action]'))b.addEventListener('click',async()=>{
   const a=b.dataset.action;
   if(a==='emergency'&&!confirm('Tutup semua posisi PAPER milik bot dan stop entry?'))return;
-  if(a==='start'&&!confirm('Jalankan strategi pada data sintetis PAPER? Tidak mengirim order TradeWill.'))return;
+  if(a==='start'&&!confirm('Jalankan strategi PAPER? Tidak mengirim order TradeWill.'))return;
   try{await req('/api/control/'+a);setMsg('Perintah '+a+' berhasil pada engine PAPER.');await refresh();}catch(e){setMsg(e.message,true);}
 });
 refresh();setInterval(refresh,1500);
+
+$('saveBalance').addEventListener('click',async()=>{try{await req('/api/virtual-balance',{amount:Number($('virtualBalance').value)});await refresh();setMsg('Saldo virtual tersimpan');}catch(e){setMsg(e.message,true);}});

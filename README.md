@@ -1,3 +1,49 @@
+# TradeWill Quant Engine V2 — external-feed paper preview
+
+**Status:** experimental, untested V2. No verified TradeWill connector, no real or broker-demo orders, no automatic broker balance. External quotes are supplied by a separate authorized adapter; the engine cannot authenticate their provenance. Do not expose localhost or use real money. Offline synthetic mode is retained for software testing only.
+
+## Windows installation
+
+```powershell
+git clone https://github.com/JaGir9/tradewill.git
+cd tradewill
+py -3 -m venv .venv
+.venv\Scripts\python.exe -m pip install -r requirements.txt
+.venv\Scripts\python.exe -m uvicorn app.main:app --host 127.0.0.1 --port 8000
+```
+
+Open http://127.0.0.1:8000 or run START.bat. Existing checkout: stop server, back up runtime database, then git pull --ff-only. Do not commit runtime, credentials, HAR or browser profiles.
+
+## Usage
+
+Select SIMULATION, switch account, set virtual balance before first trade, save strategy and lot settings. Start requires a fresh external quote and 210–500 closed M1 candles. OFFLINE synthetic test is available without a feed. DEMO TradeWill and REAL USD/CENT are configuration-only. Stop pauses entry; emergency closes paper positions only with fresh data. Positions are memory-only; do not restart with open positions. SQLite stores closed trades. No margin/swap model or verified contract specs yet.
+
+## External feed contract
+
+POST /api/feed with JSON {symbol, bid, ask, timestamp, bars}. Timestamp is Unix seconds, bars are ordered closed M1 candles with timestamp (minute start), open, high, low, close. Supply 210–500 bars on every update, last bar within 180 seconds; quote within 10 seconds. Feed stale pauses entry. Use an authorized provider; no TradeWill feed adapter is included. This interface is not proof of live data. Simulation uses ask for buys and bid for sells, opposite side for exit, assumed commissions. Spread and contract risk estimates remain approximate.
+
+## Commands
+
+```powershell
+Invoke-RestMethod http://127.0.0.1:8000/api/state
+Invoke-RestMethod -Method Post -Uri http://127.0.0.1:8000/api/account -ContentType application/json -Body '{"account":"simulation"}'
+Invoke-RestMethod -Method Post -Uri http://127.0.0.1:8000/api/virtual-balance -ContentType application/json -Body '{"amount":100}'
+Invoke-RestMethod -Method Post -Uri http://127.0.0.1:8000/api/control/start
+Invoke-RestMethod -Method Post -Uri http://127.0.0.1:8000/api/control/stop
+```
+
+Default AUTO: Sniper Pullback + Momentum Breakout, score 85, auto lot, max 1 position, risk 0.5%, daily loss 2%. No AI. Scores are not win probabilities. See app/strategy.py.
+
+## Release gates for broker execution
+
+Authorized API/browser integration, account identity/currency verification, actual balance/equity/free margin, instrument specifications, broker-side SL/TP, idempotent order reconciliation, demo execution tests, persistent recovery, explicit real enablement. None of these gates are completed by this preview.
+
+## Tests
+
+Install pytest/httpx and run pytest -q. Existing V1 tests may need migration to the new default account; V2 has not been executed in this environment.
+
+## V1 reference
+
 # TradeWill Universal Quant Engine V1 - PAPER ONLY
 
 Prototype lokal **tanpa AI**, dengan dashboard `http://127.0.0.1:8000`, strategi **Adaptive Sniper Pullback** dan **Momentum Breakout**, akun DEMO paper, konfigurasi lot/risk/entry 1-3, history SQLite, dan kontrol START / PAUSE / STOP / EMERGENCY PAPER CLOSE.
