@@ -1,9 +1,9 @@
 @echo off
 cd /d "%~dp0"
 if not exist .venv\Scripts\python.exe (
-  py -3 -m venv .venv
-  .venv\Scripts\python.exe -m pip install -r requirements.txt
+  call INSTALL.bat
+  if errorlevel 1 exit /b 1
 )
-start "TradeWill Dashboard" "http://127.0.0.1:8000"
+echo Open http://127.0.0.1:8000 after server starts.
 .venv\Scripts\python.exe -m uvicorn app.main:app --host 127.0.0.1 --port 8000
 pause

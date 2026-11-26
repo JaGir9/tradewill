@@ -1,3 +1,7 @@
+# Panduan mulai dari nol
+
+Baca [tutorial Windows lengkap](docs/PANDUAN_WINDOWS.md). Gunakan branch `v2-preview`, jalankan `INSTALL.bat` lalu `START.bat`.
+
 # V2.1 manual login launcher
 
 Install dependencies and Chromium: `.venv\\Scripts\\python.exe -m pip install -r requirements.txt` then `.venv\\Scripts\\python.exe -m playwright install chromium`. Start backend and click LOGIN TRADEWILL. Enter credentials and OTP only on broker website. Persistent browser profile under runtime/browser_profile is sensitive. This launcher does not verify login, enumerate accounts, switch accounts or collect quotes. Simulation still requires an authorized external feed; broker demo and real execution remain locked. Offline mode is synthetic. No automatic login gate is claimed. V2.1 has not been runtime tested.
