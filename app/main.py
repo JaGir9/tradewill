@@ -18,6 +18,8 @@ async def market_loop():
     while True:
         try:
             await asyncio.to_thread(engine.tick)
+            if demo_auto.enabled:
+                await asyncio.to_thread(demo_auto.evaluate, demo_feed, bridge, store.config("broker_demo"))
             if not ACCOUNTS[engine.account]["paper"] and engine.status == "RUNNING" and not bridge.status()["fresh"]:
                 await asyncio.to_thread(engine.pause)
         except Exception:
