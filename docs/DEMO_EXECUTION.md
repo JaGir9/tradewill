@@ -1,0 +1,2 @@
+# V3.4 DEMO execution test
+Reload extension and broker tab. A DEMO-only panel appears on TradeWill when the visible account pill explicitly says Demo. BUY/SELL use 0.01 lot; CLOSE requires exactly one visible position and explicit confirmation. Broker dialogs must be confirmed manually. After a submit, reconcile position/history before reloading. No automatic strategy, no real orders, no dashboard execution. Not runtime tested.

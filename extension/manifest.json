@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "TradeWill Read-only Bridge",
-  "version": "3.3.0",
+  "version": "3.4.0",
   "permissions": [
     "storage"
   ],
@@ -19,7 +19,8 @@
         "https://*.tradewill.id/*"
       ],
       "js": [
-        "content.js"
+        "content.js",
+        "demo_execution.js"
       ]
     }
   ]
