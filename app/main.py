@@ -1,0 +1,118 @@
+"""Local-only API. No TradeWill order endpoints are used in this release."""
+from contextlib import asynccontextmanager
+from pathlib import Path
+import asyncio
+import os
+from fastapi import FastAPI, HTTPException, Request, WebSocket, WebSocketDisconnect
+from fastapi.responses import FileResponse
+from fastapi.staticfiles import StaticFiles
+from pydantic import BaseModel
+from .core import Engine, Store, ACCOUNTS
+
+BASE = Path(__file__).resolve().parent
+store = Store()
+engine = Engine(store)
+
+async def market_loop():
+    while True:
+        try:
+            await asyncio.to_thread(engine.tick)
+        except Exception:
+            # Never leave an order-generating process running after an internal error.
+            engine.stop()
+        await asyncio.sleep(1.0)
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    task = asyncio.create_task(market_loop())
+    yield
+    task.cancel()
+    try:
+        await task
+    except asyncio.CancelledError:
+        pass
+
+app = FastAPI(title="Universal Quant Engine - PAPER ONLY", lifespan=lifespan)
+app.mount("/static", StaticFiles(directory=str(BASE / "static")), name="static")
+
+class AccountChoice(BaseModel):
+    account: str
+
+class ConfigPatch(BaseModel):
+    config: dict
+
+@app.middleware("http")
+async def restrict_origin(request: Request, call_next):
+    # Binding server to 127.0.0.1 is mandatory; prevent common DNS rebinding.
+    host = request.url.hostname
+    if host not in {"127.0.0.1", "localhost", "testserver"}:
+        from fastapi.responses import JSONResponse
+        return JSONResponse({"detail":"localhost only"}, status_code=403)
+    if request.method in {"POST", "PUT", "PATCH", "DELETE"}:
+        origin = request.headers.get("origin")
+        if origin:
+            from urllib.parse import urlparse
+            u = urlparse(origin)
+            if u.hostname not in {"127.0.0.1", "localhost"}:
+                from fastapi.responses import JSONResponse
+                return JSONResponse({"detail":"invalid origin"},status_code=403)
+    return await call_next(request)
+
+@app.get("/")
+async def index():
+    return FileResponse(BASE / "static" / "index.html")
+
+@app.get("/api/state")
+async def state():
+    return await asyncio.to_thread(engine.snapshot)
+
+@app.post("/api/account")
+async def account(body: AccountChoice):
+    try:
+        await asyncio.to_thread(engine.switch, body.account)
+        return await state()
+    except ValueError as exc:
+        raise HTTPException(409, str(exc)) from exc
+
+@app.post("/api/config")
+async def config(body: ConfigPatch):
+    try:
+        return {"config": await asyncio.to_thread(engine.configure, body.config)}
+    except ValueError as exc:
+        raise HTTPException(422, str(exc)) from exc
+
+@app.post("/api/control/{action}")
+async def control(action: str):
+    commands = {"start": engine.start, "pause": engine.pause, "stop": engine.stop, "emergency": engine.emergency}
+    if action not in commands:
+        raise HTTPException(404, "Perintah tidak dikenal")
+    try:
+        await asyncio.to_thread(commands[action])
+        return await state()
+    except ValueError as exc:
+        raise HTTPException(409, str(exc)) from exc
+
+@app.get("/api/history")
+async def history():
+    return await asyncio.to_thread(store.history, engine.account)
+
+@app.get("/api/broker/status")
+async def broker_status():
+    return {"connected":False,"login":"NOT_IMPLEMENTED","account_switch":"NOT_IMPLEMENTED","live_trading":"DISABLED",
+            "reason":"TradeWill browser account switching/order execution requires authorized integration and verified selectors"}
+
+@app.websocket("/ws")
+async def websocket(ws: WebSocket):
+    origin = ws.headers.get("origin")
+    if origin:
+        from urllib.parse import urlparse
+        if urlparse(origin).hostname not in {"127.0.0.1", "localhost"}:
+            await ws.close(code=1008)
+            return
+    await ws.accept()
+    try:
+        while True:
+            await ws.send_json(await asyncio.to_thread(engine.snapshot))
+            await asyncio.sleep(1.0)
+    except (WebSocketDisconnect, RuntimeError):
+        pass

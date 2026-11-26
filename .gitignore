@@ -1,0 +1,13 @@
+__pycache__/
+*.py[cod]
+.venv/
+.env
+browser_profile/
+runtime/
+*.har
+*.sqlite3
+*.sqlite3-shm
+*.sqlite3-wal
+*.log
+.DS_Store
+.pytest_cache/
