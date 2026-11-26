@@ -17,6 +17,8 @@ async def market_loop():
     while True:
         try:
             await asyncio.to_thread(engine.tick)
+            if not ACCOUNTS[engine.account]["paper"] and engine.status == "RUNNING" and not bridge.status()["fresh"]:
+                await asyncio.to_thread(engine.pause)
         except Exception:
             # Never leave an order-generating process running after an internal error.
             engine.stop()
@@ -87,6 +89,8 @@ async def control(action: str):
     if action not in commands:
         raise HTTPException(404, "Perintah tidak dikenal")
     try:
+        if action == "start" and not ACCOUNTS[engine.account]["paper"] and not bridge.status()["fresh"]:
+            raise ValueError("Browser bridge disconnected; connect TradeWill first")
         await asyncio.to_thread(commands[action])
         return await state()
     except ValueError as exc:

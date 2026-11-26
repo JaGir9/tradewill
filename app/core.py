@@ -226,13 +226,18 @@ class Engine:
     def start(self):
         with self.lock:
             if not ACCOUNTS[self.account]["paper"]:
-                raise ValueError("Order broker terkunci: integrasi belum diverifikasi")
+                if self.status not in {"STOPPED", "PAUSED"}:
+                    raise ValueError("Monitoring sudah berjalan")
+                self.status = "RUNNING"
+                self.latest_signal = Signal("WAIT", "NONE", 0, "MONITOR ONLY: broker orders disabled")
+                self.store.event(self.account, "Broker monitoring started; no orders")
+                return
             if self.account == "simulation" and not self.quote_ready():
                 raise ValueError("Feed eksternal belum siap: perlu 210 candle M1 dan quote aktual")
             if self.status not in {"STOPPED", "PAUSED"}:
                 raise ValueError("Bot sudah berjalan")
             self.status = "RUNNING"
-            self.day_start_equity = self.store.anchor("demo", self.day_key, self.equity())
+            self.day_start_equity = self.store.anchor(self.account, self.day_key, self.equity())
             self.store.event(self.account, "Bot RUNNING (PAPER, synthetic market)")
 
     def pause(self):

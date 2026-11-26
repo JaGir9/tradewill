@@ -1,0 +1,2 @@
+# V3.2
+DEMO and REAL START enables read-only monitoring when bridge heartbeat is fresh. No broker orders, no synthetic trades in broker modes. Stale heartbeat pauses monitoring. Update v2-preview and restart backend. Runtime not tested.

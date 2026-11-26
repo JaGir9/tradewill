@@ -28,7 +28,7 @@ function encodeConfig(){
 function td(val){const e=document.createElement('td');e.textContent=String(val??'—');return e;}
 function tableRows(id,arr,fn){const body=$(id);body.replaceChildren();for(const item of arr){const tr=document.createElement('tr');for(const value of fn(item))tr.appendChild(td(value));body.appendChild(tr);}}
 function render(s){
-  $('status').textContent=s.status;
+  $('status').textContent=s.status+(s.account!=='demo'&&s.account!=='simulation'?' | MONITOR ONLY':'');
   $('acctLabel').textContent=s.account.toUpperCase();$('balance').textContent=s.balance===null?'NOT CONNECTED':'$'+s.balance.toFixed(2);
   $('equity').textContent=s.equity===null?'NOT CONNECTED':'$'+s.equity.toFixed(2);
   $('pnl').textContent='$'+s.metrics.realized_net.toFixed(2);
@@ -37,7 +37,7 @@ function render(s){
   $('price').textContent=s.price??'—';$('feedStatus').textContent=s.market_source+' | feed ready: '+s.feed_ready;$('saveBalance').disabled=s.account!=='simulation'||s.status!=='STOPPED';$('signal').textContent=s.signal.side;$('strategy').textContent=s.signal.strategy;$('score').textContent=s.signal.score+'/100';$('reason').textContent=s.signal.reason;
   $('broker').textContent='Broker orders: DISABLED';
   $('switch').disabled=s.status!=='STOPPED';
-  for(const b of document.querySelectorAll('[data-action]')){const a=b.dataset.action;b.disabled=(a==='start'&&(s.status==='RUNNING'||(s.account!=='demo'&&(s.account!=='simulation'||!s.feed_ready))))||(a==='pause'&&s.status!=='RUNNING');}
+  for(const b of document.querySelectorAll('[data-action]')){const a=b.dataset.action;b.disabled=(a==='start'&&(s.status==='RUNNING'||(s.account==='simulation'&&!s.feed_ready)))||(a==='pause'&&s.status!=='RUNNING');}
   if(!accountChoicePending) $('account').value=s.account;
   if(lastAccount!==s.account){lastAccount=s.account;loadConfig(s.config);}
   if(!configIsDirty && s.status==='STOPPED')loadConfig(s.config);
@@ -58,8 +58,8 @@ cfgForm.addEventListener('submit',async e=>{e.preventDefault();try{await req('/a
 for(const b of document.querySelectorAll('[data-action]'))b.addEventListener('click',async()=>{
   const a=b.dataset.action;
   if(a==='emergency'&&!confirm('Tutup semua posisi PAPER milik bot dan stop entry?'))return;
-  if(a==='start'&&!confirm('Jalankan strategi PAPER? Tidak mengirim order TradeWill.'))return;
-  try{await req('/api/control/'+a);setMsg('Perintah '+a+' berhasil pada engine PAPER.');await refresh();}catch(e){setMsg(e.message,true);}
+  if(a==='start'&&!confirm('Mulai mode terpilih? DEMO/REAL hanya monitoring, tanpa order broker.'))return;
+  try{await req('/api/control/'+a);setMsg('Perintah '+a+' berhasil. DEMO/REAL: monitoring only, tanpa order broker.');await refresh();}catch(e){setMsg(e.message,true);}
 });
 refresh();setInterval(refresh,1500);
 
