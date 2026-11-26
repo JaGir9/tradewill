@@ -150,6 +150,8 @@ async def virtual_balance(body: VirtualBalance):
 
 from .browser_bridge import Bridge, Heartbeat
 bridge = Bridge()
+from .demo_feed import DemoFeed
+demo_feed = DemoFeed()
 
 @app.get("/api/bridge/pair")
 async def bridge_pair(request: Request):
@@ -161,8 +163,9 @@ async def bridge_pair(request: Request):
 async def bridge_heartbeat(body: Heartbeat, request: Request):
     if not bridge.accept(request.headers.get("x-bridge-key",""),body):
         raise HTTPException(403,"Pairing required")
+    demo_feed.update(body)
     return {"accepted":True}
 
 @app.get("/api/bridge/status")
 async def bridge_status():
-    return bridge.status()
+    return {**bridge.status(), "demo_strategy": demo_feed.status()}

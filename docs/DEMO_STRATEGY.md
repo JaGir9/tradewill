@@ -1,0 +1,2 @@
+# V3.5
+Observed DEMO bid/ask midpoint M1 candles feed the existing Python decide() strategy. Inspect GET /api/bridge/status demo_strategy. Requires 210 consecutive closed minutes, resets on feed gaps or symbol/account changes. No synthetic candles. Advisory only; manual V3.4 execution remains. No automatic broker order submission or real execution. Runtime not tested.
