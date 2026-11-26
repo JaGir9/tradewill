@@ -64,3 +64,5 @@ for(const b of document.querySelectorAll('[data-action]'))b.addEventListener('cl
 refresh();setInterval(refresh,1500);
 
 $('saveBalance').addEventListener('click',async()=>{try{await req('/api/virtual-balance',{amount:Number($('virtualBalance').value)});await refresh();setMsg('Saldo virtual tersimpan');}catch(e){setMsg(e.message,true);}});
+
+$('loginBroker').addEventListener('click',async()=>{try{await req('/api/broker/login');$('loginStatus').textContent='Browser diminta dibuka. Login manual di TradeWill; autentikasi belum diverifikasi.';}catch(e){setMsg(e.message,true);}});

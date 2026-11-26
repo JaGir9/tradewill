@@ -142,3 +142,13 @@ async def virtual_balance(body: VirtualBalance):
         return await state()
     except ValueError as exc:
         raise HTTPException(409,str(exc)) from exc
+
+from . import login_browser
+
+@app.post("/api/broker/login")
+async def broker_login():
+    return await asyncio.to_thread(login_browser.launch)
+
+@app.get("/api/broker/login-status")
+async def broker_login_status():
+    return login_browser.status()
