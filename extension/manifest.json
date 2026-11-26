@@ -1,0 +1,26 @@
+{
+  "manifest_version": 3,
+  "name": "TradeWill Read-only Bridge",
+  "version": "3.0.0",
+  "permissions": [
+    "storage"
+  ],
+  "host_permissions": [
+    "http://127.0.0.1:8000/*"
+  ],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "options_page": "options.html",
+  "content_scripts": [
+    {
+      "matches": [
+        "https://tradewill.id/*",
+        "https://*.tradewill.id/*"
+      ],
+      "js": [
+        "content.js"
+      ]
+    }
+  ]
+}

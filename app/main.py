@@ -53,7 +53,7 @@ async def restrict_origin(request: Request, call_next):
         if origin:
             from urllib.parse import urlparse
             u = urlparse(origin)
-            if u.hostname not in {"127.0.0.1", "localhost"}:
+            if u.hostname not in {"127.0.0.1", "localhost"} and not (request.url.path == "/api/bridge/heartbeat" and u.scheme == "chrome-extension"):
                 from fastapi.responses import JSONResponse
                 return JSONResponse({"detail":"invalid origin"},status_code=403)
     return await call_next(request)
@@ -98,7 +98,7 @@ async def history():
 
 @app.get("/api/broker/status")
 async def broker_status():
-    return {"connected":False,"login":"NOT_IMPLEMENTED","account_switch":"NOT_IMPLEMENTED","live_trading":"DISABLED",
+    return {"connected":bridge.status()["fresh"],"login":"UNVERIFIED","account_switch":"NOT_IMPLEMENTED","live_trading":"DISABLED",
             "reason":"TradeWill browser account switching/order execution requires authorized integration and verified selectors"}
 
 @app.websocket("/ws")
@@ -143,12 +143,22 @@ async def virtual_balance(body: VirtualBalance):
     except ValueError as exc:
         raise HTTPException(409,str(exc)) from exc
 
-from . import login_browser
 
-@app.post("/api/broker/login")
-async def broker_login():
-    return await asyncio.to_thread(login_browser.launch)
+from .browser_bridge import Bridge, Heartbeat
+bridge = Bridge()
 
-@app.get("/api/broker/login-status")
-async def broker_login_status():
-    return login_browser.status()
+@app.get("/api/bridge/pair")
+async def bridge_pair(request: Request):
+    if request.headers.get("sec-fetch-site") not in ("same-origin", "none"):
+        raise HTTPException(403,"Open local dashboard directly")
+    return {"key":bridge.key}
+
+@app.post("/api/bridge/heartbeat")
+async def bridge_heartbeat(body: Heartbeat, request: Request):
+    if not bridge.accept(request.headers.get("x-bridge-key",""),body):
+        raise HTTPException(403,"Pairing required")
+    return {"accepted":True}
+
+@app.get("/api/bridge/status")
+async def bridge_status():
+    return bridge.status()

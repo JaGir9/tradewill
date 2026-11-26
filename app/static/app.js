@@ -35,7 +35,7 @@ function render(s){
   $('winrate').textContent=s.metrics.win_rate===null?'—':s.metrics.win_rate+'%';
   $('open').textContent=s.positions.length;
   $('price').textContent=s.price??'—';$('feedStatus').textContent=s.market_source+' | feed ready: '+s.feed_ready;$('saveBalance').disabled=s.account!=='simulation'||s.status!=='STOPPED';$('signal').textContent=s.signal.side;$('strategy').textContent=s.signal.strategy;$('score').textContent=s.signal.score+'/100';$('reason').textContent=s.signal.reason;
-  $('broker').textContent='TradeWill: NOT CONNECTED (order real disabled)';
+  $('broker').textContent='Broker orders: DISABLED';
   $('switch').disabled=s.status!=='STOPPED';
   for(const b of document.querySelectorAll('[data-action]')){const a=b.dataset.action;b.disabled=(a==='start'&&(s.status==='RUNNING'||(s.account!=='demo'&&(s.account!=='simulation'||!s.feed_ready))))||(a==='pause'&&s.status!=='RUNNING');}
   if(!accountChoicePending) $('account').value=s.account;
@@ -65,4 +65,7 @@ refresh();setInterval(refresh,1500);
 
 $('saveBalance').addEventListener('click',async()=>{try{await req('/api/virtual-balance',{amount:Number($('virtualBalance').value)});await refresh();setMsg('Saldo virtual tersimpan');}catch(e){setMsg(e.message,true);}});
 
-$('loginBroker').addEventListener('click',async()=>{try{await req('/api/broker/login');$('loginStatus').textContent='Browser diminta dibuka. Login manual di TradeWill; autentikasi belum diverifikasi.';}catch(e){setMsg(e.message,true);}});
+
+$('pairBridge').addEventListener('click',async()=>{try{const r=await fetch('/api/bridge/pair');if(!r.ok)throw Error('Pairing unavailable');const d=await r.json();await navigator.clipboard.writeText(d.key);setMsg('Paste key into extension options.');}catch(e){setMsg(e.message,true);}});
+async function bridgeRefresh(){try{const r=await fetch('/api/bridge/status',{cache:'no-store'});const d=await r.json();$('loginStatus').textContent=d.fresh?'Bridge connected; login UNVERIFIED':'Bridge waiting / stale';$('observedAccount').textContent=d.fresh?'Observed account: '+(d.observation.account_hint||'—')+' | observed balance: '+(d.observation.balance_text||'—'):'No fresh observation';}catch(e){$('loginStatus').textContent='Bridge unavailable';}}
+bridgeRefresh();setInterval(bridgeRefresh,2000);
